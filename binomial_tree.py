@@ -11,7 +11,7 @@ import numpy as np
 from math import log, sqrt, exp
 from scipy.stats import norm
 
-def jarrow_rudd_params(r, sigma, dt, q=0.0):
+def __jarrow_rudd_params(r, sigma, dt, q=0.0):
     """
     Parámetros u, d, p del esquema Jarrow–Rudd con p=0.5.
     Ecuaciones:
@@ -45,7 +45,7 @@ def binomial_tree_prices(S0, u, d, N):
             S[j, i] = S[j-1, i-1] * d
     return S
 
-def option_payoff(S, K, option_type="call"):
+def __option_payoff(S, K, option_type="call"):
     if option_type.lower() == "call":
         return np.maximum(S - K, 0.0)
     elif option_type.lower() == "put":
@@ -77,14 +77,14 @@ def price_option_jarrow_rudd(
         precio, y un dict con (u, d, p).
     """
     dt = T / N
-    u, d, p = jarrow_rudd_params(r, sigma, dt, q=q)
+    u, d, p = __jarrow_rudd_params(r, sigma, dt, q=q)
     disc = np.exp(-r * dt)
 
     # Árbol de precios del subyacente
     S = binomial_tree_prices(S0, u, d, N)
 
     # Payoff terminal
-    V = option_payoff(S[:N+1, N], K, option_type=option_type)
+    V = __option_payoff(S[:N+1, N], K, option_type=option_type)
 
     # Backward induction
     american = (exercise.lower() == "american")
@@ -92,14 +92,14 @@ def price_option_jarrow_rudd(
         V = disc * (p * V[:i+1] + (1 - p) * V[1:i+2])
         if american:
             # Valor por ejercicio anticipado
-            intrinsic = option_payoff(S[:i+1, i], K, option_type=option_type)
+            intrinsic = __option_payoff(S[:i+1, i], K, option_type=option_type)
             V = np.maximum(V, intrinsic)
 
     price = float(V[0])
     params = {"u": u, "d": d, "p": p, "dt": dt}
     return price, params
 
-def black_scholes_with_q(S0, K, r, q, sigma, T, option_type="call"):
+def black_scholes(S0, K, r, q, sigma, T, option_type="call"):
     """
     Calcula el precio de una opción europea con dividend yield continuo q
     usando el modelo de Black–Scholes.
